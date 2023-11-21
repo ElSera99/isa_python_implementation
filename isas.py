@@ -72,7 +72,7 @@ class ISA:
     # reg_store = CPU register to store, reg_data = RAM register to load from
     def LOAD(self, reg_store, reg_data, offset):
         """ Load data from a sector of the memory, will load bit stream from the sectors of the memory """
-        self.registers[reg_store] = self.memory[reg_data:reg_data+offset]
+        self.registers[reg_store] = self.memory[reg_data]
         self.registers['IP'] += 1
         return self.registers[reg_store]
 
@@ -85,15 +85,16 @@ class ISA:
 
     def JMP(self, reg_data, offset):
         """ Will jump from one sector of the memory to another """
-        self.registers['SP'] = self.DECODE(self.memory[reg_data:reg_data+offset])
+        self.registers['SP'] = self.DECODE(self.memory[reg_data], 'SP')
+        self.registers['IP'] += 1
         return self.registers['SP']
 
     def HALT(self):
         """ Will stop execution of program """
-        print(self.registers['IP'],'End of Program')
+        print(f"IP:{self.registers['IP']} - End of Program")
         exit()
 
-    def ENCODE(self, value):
+    def ENCODE(self, value, reg1):
         """ Take an integer and transform into a stream of bits """
         result = []
         while value // 2 != 0:
@@ -101,16 +102,23 @@ class ISA:
             value //= 2
             if value == 1:
                 result.append(1)
+        result = result[::-1]
 
-        return result[::-1]
+        self.registers[reg1] = result
+        self.registers['IP'] += 1
 
-    def DECODE(self, value):
+        return result
+
+    def DECODE(self, value, reg1):
         """ Take a stream of bits and transform into an integer """
         result = 0
         power = len(value) - 1
         for element in value:
             result += element * (2 ** power)
             power -= 1
+
+        self.registers[reg1] = result
+        self.registers['IP'] += 1
 
         return result
 
